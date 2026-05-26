@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>⚛️ Sistema HA</title>
+
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#6C63FF">
+<meta name="application-name" content="Sistema HA">
+<meta name="description" content="Sistema personal de hábitos atómicos">
+
+<!-- iOS Specific -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sistema HA">
+<meta name="format-detection" content="telephone=no">
+
+<!-- Android Specific -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- App Icon (SVG inline as data URI) -->
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%25" y1="0%25" x2="100%25" y2="100%25"><stop offset="0%25" stop-color="%236C63FF"/><stop offset="100%25" stop-color="%239C6FFF"/></linearGradient></defs><rect width="100" height="100" rx="22" fill="url(%23g)"/><g transform="translate(50,50)" fill="none" stroke="white" stroke-width="3.5"><circle r="6" fill="white" stroke="none"/><ellipse rx="22" ry="9"/><ellipse rx="22" ry="9" transform="rotate(60)"/><ellipse rx="22" ry="9" transform="rotate(120)"/></g></svg>'>
+
+<!-- Apple Touch Icon (larger, no rounded corners since iOS rounds them) -->
+<link rel="apple-touch-icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><defs><linearGradient id="g" x1="0%25" y1="0%25" x2="100%25" y2="100%25"><stop offset="0%25" stop-color="%236C63FF"/><stop offset="100%25" stop-color="%239C6FFF"/></linearGradient></defs><rect width="180" height="180" fill="url(%23g)"/><g transform="translate(90,90)" fill="none" stroke="white" stroke-width="6"><circle r="11" fill="white" stroke="none"/><ellipse rx="40" ry="16"/><ellipse rx="40" ry="16" transform="rotate(60)"/><ellipse rx="40" ry="16" transform="rotate(120)"/></g></svg>'>
+
+<!-- Manifest inline -->
+<link rel="manifest" href='data:application/manifest+json;utf8,{"name":"Sistema HA - Hábitos Atómicos","short_name":"Sistema HA","description":"Tu sistema personal basado en Hábitos Atómicos","start_url":"./","display":"standalone","orientation":"portrait","background_color":"%230D0F14","theme_color":"%236C63FF","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><defs><linearGradient id=%22g%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 stop-color=%22%236C63FF%22/><stop offset=%22100%25%22 stop-color=%22%239C6FFF%22/></linearGradient></defs><rect width=%22512%22 height=%22512%22 rx=%22110%22 fill=%22url(%23g)%22/><g transform=%22translate(256,256)%22 fill=%22none%22 stroke=%22white%22 stroke-width=%2218%22><circle r=%2230%22 fill=%22white%22 stroke=%22none%22/><ellipse rx=%22115%22 ry=%2245%22/><ellipse rx=%22115%22 ry=%2245%22 transform=%22rotate(60)%22/><ellipse rx=%22115%22 ry=%2245%22 transform=%22rotate(120)%22/></g></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}'>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D0F14;--surface:#13161E;--card:#181C26;--border:#252A38;
+  --accent:#6C63FF;--accent-soft:#6C63FF22;
+  --gold:#F5A623;--gold-soft:#F5A62322;
+  --green:#2DD4A0;--green-soft:#2DD4A022;
+  --red:#FF6B6B;--red-soft:#FF6B6B22;
+  --blue:#4FC3F7;--blue-soft:#4FC3F722;
+  --purple:#C084FC;--purple-soft:#C084FC22;
+  --text:#E8EAF0;--muted:#7B829A;--dim:#4A5068;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+@supports(padding:env(safe-area-inset-top)){
+  .app{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px #6C63FF44}50%{box-shadow:0 0 22px #6C63FF88}}
+@keyframes intentionPulse{0%,100%{box-shadow:0 0 0 0 #F5A62300}50%{box-shadow:0 0 0 8px #F5A62322}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto}
+.header{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.header-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-.5px}
+.header-date{font-size:12px;color:var(--muted);margin-top:2px}
+.capture-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-family:'DM Sans';font-weight:500;animation:glow 3s infinite;cursor:pointer}
+.nav{display:flex;gap:4px;padding:14px 20px 0;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:11px;font-family:'DM Sans';font-weight:500;white-space:nowrap;cursor:pointer;transition:all .2s;flex-shrink:0;position:relative}
+.nav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav-dot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--red);border:1px solid var(--bg)}
+.content{flex:1;padding:16px 20px 100px;animation:fadeIn .3s ease}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:12px}
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:4px;transition:width .6s ease}
+.habit-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;margin-bottom:8px;width:100%;text-align:left}
+.check-box{width:26px;height:26px;border-radius:7px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .2s}
+.energy-row{display:flex;gap:8px;margin:10px 0}
+.energy-btn{flex:1;padding:12px 8px;border:2px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer;text-align:center;transition:all .2s;font-family:'DM Sans'}
+.intention-card{background:linear-gradient(135deg,#F5A62318,#F5A62308);border:1px solid #F5A62355;border-radius:16px;padding:18px;margin-bottom:12px}
+.friction-card{border-radius:14px;padding:16px;margin-bottom:10px;animation:fadeIn .4s ease}
+.friction-card.warning{background:var(--red-soft);border:1px solid #FF6B6B55}
+.friction-card.moderate{background:var(--gold-soft);border:1px solid #F5A62355}
+.section-divider{display:flex;align-items:center;gap:10px;margin:14px 0 10px}
+.section-divider-line{flex:1;height:1px;background:var(--border)}
+.section-divider-label{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:5px;display:block}
+.form-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans';outline:none}
+.form-input:focus{border-color:var(--accent)}
+.form-textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'DM Sans';outline:none;resize:none;min-height:80px;line-height:1.6}
+.form-textarea:focus{border-color:var(--accent)}
+.form-group{margin-bottom:10px}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;width:100%}
+.btn-secondary{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:14px;font-family:'DM Sans';cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.del-btn{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1}
+.import-btn{background:var(--green-soft);color:var(--green);border:1px solid #2DD4A044;border-radius:8px;padding:6px 12px;font-size:12px;font-family:'DM Sans';font-weight:500;cursor:pointer}
+.cat-pills{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.cat-pill{border-radius:8px;padding:5px 10px;font-size:11px;font-family:'DM Sans';cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.stat-icon{font-size:22px;margin-bottom:4px}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:28px}
+.stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+.law-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.law-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.quote-card{background:linear-gradient(135deg,#6C63FF18,#6C63FF08);border:1px solid #6C63FF33;border-radius:16px;padding:18px;margin-bottom:12px}
+.tip-card{background:var(--accent-soft);border:1px solid #6C63FF44;border-radius:14px;padding:16px;margin-bottom:12px}
+.modal-overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:flex-end;justify-content:center;z-index:1000;padding:16px;animation:fadeIn .2s ease}
+.modal-box{background:var(--card);border:1px solid #6C63FF55;border-radius:20px;padding:22px;width:100%;max-width:440px;animation:slideUp .25s ease;max-height:85vh;overflow-y:auto}
+.idea-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px}
+.idea-btn{border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-family:'DM Sans';cursor:pointer}
+.ai-btn{background:linear-gradient(135deg,var(--accent),#9C6FFF);color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:15px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;width:100%;margin-bottom:12px;animation:glow 3s infinite}
+.ai-btn.loading{animation:pulse 1.5s infinite;background:var(--surface);color:var(--muted)}
+.ai-result{background:var(--card);border:1px solid #6C63FF55;border-radius:14px;padding:18px;margin-bottom:12px;animation:fadeIn .5s ease}
+.page-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.section-label{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.review-step{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
+.review-question{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:12px;line-height:1.4}
+.review-option{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:left;font-size:14px;font-family:'DM Sans';color:var(--text);cursor:pointer;margin-bottom:6px;transition:all .2s}
+.review-option:hover{border-color:var(--accent);background:var(--accent-soft)}
+.redesign-opt{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;transition:all .2s;width:100%;text-align:left;font-size:13px;font-family:'DM Sans';color:var(--text)}
+.redesign-opt:hover{border-color:var(--gold);background:var(--gold-soft);color:var(--gold)}
+.chart-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:12px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:80px;padding:0 2px}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .5s ease;min-height:2px}
+.bar-label{font-size:9px;color:var(--dim);white-space:nowrap}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px}
+.heat-cell{aspect-ratio:1;border-radius:3px;transition:all .2s}
+.insight-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:8px;width:100%}
+.insight-chip.good{border-color:#2DD4A044;background:var(--green-soft);color:var(--green)}
+.insight-chip.warn{border-color:#F5A62344;background:var(--gold-soft);color:var(--gold)}
+.insight-chip.bad{border-color:#FF6B6B44;background:var(--red-soft);color:var(--red)}
+.export-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'DM Sans';color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;margin-bottom:8px;transition:all .2s}
+.export-btn:hover{border-color:var(--accent);color:var(--accent)}
+.formula-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:5px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text);z-index:2000;animation:slideUp .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:90%}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+.loader{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite}
+.splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px}
+.splash-icon{font-size:40px}
+.splash-text{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="splash" id="splash">
+  <div class="splash-icon">⚛️</div>
+  <div class="loader"></div>
+  <div class="splash-text">Cargando tu sistema…</div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <div class="header">
+    <div>
+      <div class="header-title">⚛️ Sistema HA</div>
+      <div class="header-date" id="dateDisplay"></div>
+    </div>
+    <button class="capture-btn" onclick="openCapture()">💡 Idea</button>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="setView('dashboard',this)">🏠 Hoy</button>
+    <button class="nav-btn" onclick="setView('habitos',this)">⚛️ Hábitos</button>
+    <button class="nav-btn" onclick="setView('memoria',this)">📊 Memoria</button>
+    <button class="nav-btn" onclick="setView('ideas',this)" id="ideasNavBtn">💡 Ideas</button>
+    <button class="nav-btn" onclick="setView('revision',this)" id="revisionNavBtn">🔄 Revisión</button>
+    <button class="nav-btn" onclick="setView('coach',this)">🧠 Coach</button>
+  </div>
+  <div class="content" id="mainContent"></div>
+</div>
+
+<div class="modal-overlay" id="captureModal" style="display:none" onclick="if(event.target===this)closeCapture()">
+  <div class="modal-box">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:4px">💡 Captura rápida</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Suéltala aquí. Procesarás después.</div>
+    <textarea class="form-textarea" id="captureText" placeholder="Lo que sea que esté en tu cabeza…" maxlength="2000"></textarea>
+    <div class="cat-pills" id="captureCats" style="margin:10px 0"></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveCapture()" style="flex:1">Guardar</button>
+      <button class="btn-secondary" onclick="closeCapture()" style="padding:11px 14px">✕</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="frictionModal" style="display:none" onclick="if(event.target===this)closeFriction()">
+  <div class="modal-box">
+    <div style="font-size:28px;text-align:center;margin-bottom:10px">⚠️</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;text-align:center;margin-bottom:6px" id="frictionHabitName"></div>
+    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:18px;line-height:1.6" id="frictionMsg"></div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:10px;color:var(--gold)">¿Qué está pasando?</div>
+    <button class="redesign-opt" onclick="frictionAction('cue')">🎯 La señal no funciona</button>
+    <button class="redesign-opt" onclick="frictionAction('small')">🪶 Reducir a 2 minutos</button>
+    <button class="redesign-opt" onclick="frictionAction('time')">🕐 Cambiar horario</button>
+    <button class="redesign-opt" onclick="frictionAction('pause')">⏸️ Pausar sin eliminar</button>
+    <button class="redesign-opt" onclick="frictionAction('delete')" style="color:var(--red)">🗑️ Eliminar</button>
+    <button onclick="closeFriction()" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:8px">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="redesignModal" style="display:none" onclick="if(event.target===this)closeRedesign()">
+  <div class="modal-box" id="redesignContent"></div>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECURITY LAYER — XSS protection
+// ════════════════════════════════════════════════════════════════════════════
+function esc(str){
+  if(str===null||str===undefined) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ════════════════════════════════════════════════════════════════════════════
+let toastTimeout=null;
+function toast(msg,type='info'){
+  const existing=document.querySelector('.toast');
+  if(existing) existing.remove();
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  if(toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>el.remove(),3500);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATABASE LAYER — IndexedDB with localStorage fallback
+// ════════════════════════════════════════════════════════════════════════════
+const DB_NAME='SistemaHA';
+const DB_VERSION=1;
+const STORES={
+  meta:'meta',           // app metadata, version, config
+  habits:'habits',       // habit definitions
+  ideas:'ideas',         // captured ideas
+  log:'log',             // daily completions { key: YYYY-MM-DD, data: {habitId: bool} }
+  daily:'daily',         // daily metadata (energy, intention, evening reflection)
+  reviews:'reviews',     // weekly reviews
+};
+
+let db=null;
+let usingFallback=false;
+
+async function openDB(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){
+      console.warn('IndexedDB not supported, falling back to localStorage');
+      usingFallback=true;
+      resolve(null);
+      return;
+    }
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onerror=()=>{
+      console.error('DB open error',req.error);
+      usingFallback=true;
+      resolve(null);
+    };
+    req.onsuccess=()=>{
+      db=req.result;
+      resolve(db);
+    };
+    req.onupgradeneeded=(e)=>{
+      const _db=e.target.result;
+      Object.values(STORES).forEach(name=>{
+        if(!_db.objectStoreNames.contains(name)){
+          _db.createObjectStore(name,{keyPath:'key'});
+        }
+      });
+    };
+  });
+}
+
+function dbTx(storeName,mode='readonly'){
+  if(!db) return null;
+  return db.transaction(storeName,mode).objectStore(storeName);
+}
+
+async function dbGet(store,key){
+  if(usingFallback){
+    try{
+      const raw=localStorage.getItem(`fb_${store}_${key}`);
+      return raw?JSON.parse(raw):null;
+    }catch(e){console.error('localStorage fallback get error',e);return null}
+  }
+  return new Promise((resolve)=>{
+    try{
+      const tx=dbTx(store);
+      const req=tx.get(key);
+      req.onsuccess=()=>resolve(req.result?req.result.value:null);
+      req.onerror=()=>{console.error('dbGet error',req.error);resolve(null)};
+    }catch(e){console.error('dbGet exception',e);resolve(null)}
+  });
+}
+
+async function dbSet(store,key,value){
+  if(usingFallback){
+    try{
+      localStorage.setItem(`fb_${store}_${key}`,JSON.stringify(value));
+      return true;
+    }catch(e){console.error('localStorage fallback set error',e);return false}
+  }
+  return new Promise((resolve)=>{
+    try{
+      const tx=dbTx(store,'readwrite');
+      const req=tx.put({key,value});
+      req.onsuccess=()=>resolve(true);
+      req.onerror=()=>{console.error('dbSet error',req.error);resolve(false)};
+    }catch(e){console.error('dbSet exception',e);resolve(false)}
+  });
+}
+
+async function dbGetAll(store){
+  if(usingFallback){
+    const result={};
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith(`fb_${store}_`)){
+          const key=k.substring(`fb_${store}_`.length);
+          result[key]=JSON.parse(localStorage.getItem(k));
+        }
+      }
+    }catch(e){console.error('localStorage getAll error',e)}
+    return result;
+  }
+  return new Promise((resolve)=>{
+    try{
+      const tx=dbTx(store);
+      const req=tx.getAll();
+      req.onsuccess=()=>{
+        const result={};
+        (req.result||[]).forEach(item=>{result[item.key]=item.value});
+        resolve(result);
+      };
+      req.onerror=()=>{console.error('dbGetAll error',req.error);resolve({})};
+    }catch(e){console.error('dbGetAll exception',e);resolve({})}
+  });
+}
+
+async function dbDelete(store,key){
+  if(usingFallback){
+    try{localStorage.removeItem(`fb_${store}_${key}`);return true}catch(e){return false}
+  }
+  return new Promise((resolve)=>{
+    try{
+      const tx=dbTx(store,'readwrite');
+      const req=tx.delete(key);
+      req.onsuccess=()=>resolve(true);
+      req.onerror=()=>resolve(false);
+    }catch(e){resolve(false)}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════════════════════════════
+const IDENTITY_PRESETS=[
+  {id:'cal_dios',    name:'✝️ Tiempo a solas con Dios',color:'#4FC3F7',category:'espiritual',time:'3:30 AM',desc:'Fe & Propósito'},
+  {id:'cal_gym',     name:'🏋️ Gym',                   color:'#2DD4A0',category:'salud',      time:'5:00 AM',desc:'Cuerpo & Energía'},
+  {id:'cal_familia', name:'👨‍👩‍👧‍👦 Tiempo en familia',     color:'#F5A623',category:'familia',    time:'7:00 PM',desc:'Familia'},
+  {id:'cal_juego',   name:'🎮 Tiempo de esparcimiento',color:'#6C63FF',category:'descanso',   time:'8:00 PM',desc:'Restauración'},
+  {id:'cal_lectura', name:'📚 Leer un libro',          color:'#C084FC',category:'crecimiento',time:'9:00 PM',desc:'Aprendizaje'},
+];
+const CATS=[
+  {id:'espiritual',icon:'✝️',label:'Fe & Propósito',color:'#4FC3F7'},
+  {id:'salud',     icon:'💪',label:'Cuerpo & Energía',color:'#2DD4A0'},
+  {id:'trabajo',   icon:'⚡',label:'Trabajo Profundo',color:'#6C63FF'},
+  {id:'familia',   icon:'❤️',label:'Familia',color:'#F5A623'},
+  {id:'crecimiento',icon:'🧠',label:'Aprendizaje',color:'#C084FC'},
+  {id:'descanso',  icon:'🌿',label:'Restauración',color:'#2DD4A0'},
+];
+const QUOTES=[
+  {q:'No subes al nivel de tus metas, caes al nivel de tus sistemas.',a:'James Clear'},
+  {q:'Cada acción es un voto por el tipo de persona que deseas ser.',a:'James Clear'},
+  {q:'Los hábitos son el interés compuesto de la auto-mejora.',a:'James Clear'},
+  {q:'El problema no eres tú, es tu sistema.',a:'James Clear'},
+  {q:'La identidad emerge de los hábitos. Cada hábito es evidencia de quién eres.',a:'James Clear'},
+  {q:'Pequeñas mejoras del 1% que parecen no importar se acumulan en algo extraordinario.',a:'James Clear'},
+  {q:'No tienes que ser la víctima de tu entorno. También puedes ser el arquitecto.',a:'James Clear'},
+];
+const DAYS_ES=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATE HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+function dateKey(d){return (d||new Date()).toISOString().split('T')[0]}
+function getWeekNumber(){
+  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+4-(d.getDay()||7));
+  const y=new Date(d.getFullYear(),0,1);return Math.ceil((((d-y)/86400000)+1)/7);
+}
+function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return dateKey(d)}
+function formatDate(){return new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'})}
+function isSunday(){return new Date().getDay()===0}
+
+const TODAY=dateKey();
+const WEEK_KEY='week_'+getWeekNumber();
+
+// ════════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════════
+const S={
+  view:'dashboard',
+  habits:[],
+  ideas:[],
+  streak:{},        // {habitId: number}
+  log:{},           // {YYYY-MM-DD: {habitId: bool}}
+  pausedHabits:[],
+  weekReview:{},
+  energy:'',
+  intention:'',
+  intentionEvening:'',
+  frictionHabitId:null,
+  aiInsight:'',loadingAI:false,
+  addingHabit:false,
+  newHabit:{name:'',category:'trabajo',cue:'',routine:'',reward:'',time:''},
+  captureCategory:'trabajo',
+  reviewStep:null,reviewAnswers:{},
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOAD / SAVE — with proper error handling
+// ════════════════════════════════════════════════════════════════════════════
+async function loadAll(){
+  try{
+    await openDB();
+
+    const habits=await dbGet(STORES.meta,'habits');
+    const ideas=await dbGet(STORES.meta,'ideas');
+    const streak=await dbGet(STORES.meta,'streak');
+    const paused=await dbGet(STORES.meta,'pausedHabits');
+    const review=await dbGet(STORES.reviews,WEEK_KEY);
+    const log=await dbGetAll(STORES.log);
+    const todayDaily=await dbGet(STORES.daily,TODAY);
+
+    S.habits=Array.isArray(habits)?habits:[];
+    S.ideas=Array.isArray(ideas)?ideas:[];
+    S.streak=(typeof streak==='object'&&streak!==null)?streak:{};
+    S.pausedHabits=Array.isArray(paused)?paused:[];
+    S.weekReview=(typeof review==='object'&&review!==null)?review:{};
+    S.log=log||{};
+    if(todayDaily){
+      S.energy=todayDaily.energy||'';
+      S.intention=todayDaily.intention||'';
+      S.intentionEvening=todayDaily.intentionEvening||'';
+    }
+
+    // Attempt migration from old localStorage if no IndexedDB data
+    if(S.habits.length===0&&S.ideas.length===0){
+      await migrateFromOldLocalStorage();
+    }
+
+    return true;
+  }catch(e){
+    console.error('loadAll failed',e);
+    toast('Error cargando datos. Usando respaldo.','error');
+    return false;
+  }
+}
+
+async function migrateFromOldLocalStorage(){
+  try{
+    const oldKeys=['ha2_habits','ha2_ideas','ha2_streak','ha2_log','ha2_paused','ha_habits','ha_ideas','ha_streak','ha_log','ha_paused'];
+    let migrated=false;
+    for(const key of oldKeys){
+      const raw=localStorage.getItem(key);
+      if(!raw) continue;
+      try{
+        const data=JSON.parse(raw);
+        if(key.includes('habits')&&Array.isArray(data)&&S.habits.length===0){S.habits=data;migrated=true}
+        else if(key.includes('ideas')&&Array.isArray(data)&&S.ideas.length===0){S.ideas=data;migrated=true}
+        else if(key.includes('streak')&&typeof data==='object'&&Object.keys(S.streak).length===0){S.streak=data;migrated=true}
+        else if(key.includes('log')&&typeof data==='object'&&Object.keys(S.log).length===0){S.log=data;migrated=true}
+        else if(key.includes('paused')&&Array.isArray(data)&&S.pausedHabits.length===0){S.pausedHabits=data;migrated=true}
+      }catch(e){console.warn('Could not parse old key',key)}
+    }
+    if(migrated){
+      await saveAll();
+      toast('Datos migrados desde versión anterior','success');
+    }
+  }catch(e){console.error('migration error',e)}
+}
+
+async function saveAll(){
+  try{
+    await dbSet(STORES.meta,'habits',S.habits);
+    await dbSet(STORES.meta,'ideas',S.ideas);
+    await dbSet(STORES.meta,'streak',S.streak);
+    await dbSet(STORES.meta,'pausedHabits',S.pausedHabits);
+    await dbSet(STORES.reviews,WEEK_KEY,S.weekReview);
+    await dbSet(STORES.daily,TODAY,{
+      energy:S.energy,intention:S.intention,intentionEvening:S.intentionEvening
+    });
+    return true;
+  }catch(e){
+    console.error('saveAll failed',e);
+    toast('Error guardando datos','error');
+    return false;
+  }
+}
+
+async function saveLogDay(day){
+  try{
+    await dbSet(STORES.log,day,S.log[day]||{});
+    return true;
+  }catch(e){console.error('saveLogDay failed',e);return false}
+}
+
+async function save(){
+  return saveAll();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOG HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+function getLog(day){return S.log[day]||{}}
+function setLog(day,habitId,val){
+  if(!S.log[day]) S.log[day]={};
+  S.log[day][habitId]=val;
+}
+function isDone(habitId,day){return !!(getLog(day||TODAY)[habitId])}
+function getCompletedOnDay(day){
+  const log=getLog(day);
+  return activeHabits().filter(h=>log[h.id]).length;
+}
+function getPctOnDay(day){
+  const a=activeHabits().length;
+  return a>0?Math.round(getCompletedOnDay(day)/a*100):0;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ANALYTICS
+// ════════════════════════════════════════════════════════════════════════════
+function getLast30Days(){return Array.from({length:30},(_,i)=>daysAgo(29-i))}
+function getLast90Days(){return Array.from({length:90},(_,i)=>daysAgo(89-i))}
+
+function getWeekdayStats(){
+  const totals=Array(7).fill(0),counts=Array(7).fill(0);
+  for(let i=0;i<60;i++){
+    const d=daysAgo(i);
+    if(!S.log[d]) continue;
+    const pct=getPctOnDay(d);
+    const dow=new Date(d+'T12:00:00').getDay();
+    totals[dow]+=pct;counts[dow]++;
+  }
+  return totals.map((t,i)=>counts[i]>0?Math.round(t/counts[i]):null);
+}
+function getWeakestDay(){
+  const s=getWeekdayStats();let min=101,mi=-1;
+  s.forEach((v,i)=>{if(v!==null&&v<min){min=v;mi=i}});
+  return mi>=0?{day:DAYS_ES[mi],pct:min}:null;
+}
+function getBestDay(){
+  const s=getWeekdayStats();let max=-1,mi=-1;
+  s.forEach((v,i)=>{if(v!==null&&v>max){max=v;mi=i}});
+  return mi>=0?{day:DAYS_ES[mi],pct:max}:null;
+}
+function getConsistency30(){
+  const days=getLast30Days();
+  const active=days.filter(d=>getCompletedOnDay(d)>0).length;
+  return Math.round(active/days.length*100);
+}
+function getBestStreak(){
+  const days=getLast90Days();let best=0,cur=0;
+  days.forEach(d=>{if(getCompletedOnDay(d)>0)cur++;else cur=0;if(cur>best)best=cur;});
+  return best;
+}
+function getInsights(){
+  const insights=[];
+  const cons=getConsistency30(),weak=getWeakestDay(),best=getBestDay(),bestS=getBestStreak();
+  const alerts=getFrictionAlerts();
+  if(cons>=80) insights.push({type:'good',text:`Consistencia del ${cons}% en los últimos 30 días. Estás construyendo identidad real.`});
+  else if(cons>=50) insights.push({type:'warn',text:`Consistencia del ${cons}% en 30 días. Hay espacio para mejorar.`});
+  else if(cons>0) insights.push({type:'bad',text:`Consistencia del ${cons}%. El sistema necesita rediseño, no más voluntad.`});
+  if(weak&&weak.pct<50) insights.push({type:'warn',text:`Los ${weak.day} son tu punto débil (${weak.pct}%). Revisa qué pasa ese día.`});
+  if(best&&best.pct>80) insights.push({type:'good',text:`Los ${best.day} son tu mejor día (${best.pct}%). ¿Qué haces diferente?`});
+  if(bestS>=7) insights.push({type:'good',text:`Tu mejor racha fue de ${bestS} días consecutivos.`});
+  if(alerts.length>0) insights.push({type:'bad',text:`${alerts.length} hábito(s) con fricción activa.`});
+  return insights;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+function cat(id){return CATS.find(c=>c.id===id)||CATS[2]}
+function activeHabits(){return S.habits.filter(h=>h.active&&!S.pausedHabits.includes(h.id))}
+function completedToday(){return activeHabits().filter(h=>isDone(h.id)).length}
+function progressPct(){const a=activeHabits().length;return a>0?Math.round(completedToday()/a*100):0}
+function pendingIdeas(){return S.ideas.filter(i=>!i.processed).length}
+function maxStreak(){return Math.max(0,...S.habits.map(h=>S.streak[h.id]||0))}
+function getStreak(id){return S.streak[id]||0}
+function isImported(pid){return S.habits.some(h=>h.presetId===pid)}
+function reviewDone(){return Object.keys(S.weekReview).length>=4}
+function getMissedDays(habitId){
+  let count=0;
+  for(let i=1;i<=7;i++){if(!isDone(habitId,daysAgo(i)))count++;else break}
+  return count;
+}
+function getFrictionAlerts(){
+  return S.habits.filter(h=>h.active&&h.type==='building'&&!S.pausedHabits.includes(h.id))
+    .map(h=>({habit:h,missed:getMissedDays(h.id)}))
+    .filter(x=>x.missed>=3).sort((a,b)=>b.missed-a.missed);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════════════════
+function setView(v,btn){
+  S.view=v;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  updateBadges();render();
+}
+function updateBadges(){
+  const ib=document.getElementById('ideasNavBtn');
+  if(ib)ib.textContent='💡 Ideas'+(pendingIdeas()>0?` (${pendingIdeas()})`:'');
+  const rb=document.getElementById('revisionNavBtn');
+  if(rb){rb.innerHTML='🔄 Revisión';if(isSunday()&&!reviewDone())rb.innerHTML+='<span class="nav-dot"></span>'}
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════════════════════════════════════════
+async function toggleHabit(id){
+  const was=isDone(id,TODAY);
+  setLog(TODAY,id,!was);
+  if(!S.streak[id])S.streak[id]=0;
+  if(!was)S.streak[id]++;
+  else S.streak[id]=Math.max(0,S.streak[id]-1);
+  await saveLogDay(TODAY);
+  await dbSet(STORES.meta,'streak',S.streak);
+  render();
+}
+
+async function setEnergy(l){S.energy=l;await save();render()}
+async function saveIntention(){
+  const el=document.getElementById('intentionInput');
+  if(!el) return;
+  S.intention=el.value.trim().slice(0,500);
+  await save();
+}
+async function saveEveningReflection(){
+  const el=document.getElementById('eveningInput');
+  if(!el) return;
+  S.intentionEvening=el.value.trim().slice(0,500);
+  await save();render();
+}
+
+function openFriction(id){
+  const h=S.habits.find(x=>x.id===id);if(!h)return;
+  S.frictionHabitId=id;
+  const missed=getMissedDays(id);
+  document.getElementById('frictionHabitName').textContent=h.name;
+  document.getElementById('frictionMsg').textContent=`Llevas ${missed} días sin completar. Eso no es falta de voluntad — es una señal de diseño.`;
+  document.getElementById('frictionModal').style.display='flex';
+}
+function closeFriction(){document.getElementById('frictionModal').style.display='none';S.frictionHabitId=null}
+async function frictionAction(type){
+  const id=S.frictionHabitId;if(!id)return;
+  const h=S.habits.find(x=>x.id===id);
+  closeFriction();
+  if(type==='delete'){
+    S.habits=S.habits.filter(x=>x.id!==id);await save();render();toast('Hábito eliminado','info');return;
+  }
+  if(type==='pause'){
+    if(!S.pausedHabits.includes(id))S.pausedHabits.push(id);
+    await save();render();toast('Hábito pausado','info');return;
+  }
+  let content='';
+  if(type==='cue') content=`<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:8px">🎯 Rediseñar la señal</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Ancla el hábito a algo que ya haces sin falta.</div>
+    <div class="form-group"><label class="form-label">Nueva señal</label>
+    <input id="redesignCue" class="form-input" maxlength="200" placeholder="ej: Después de servirme el café"></div>
+    <button class="btn-primary" onclick="applyRedesign('cue')">Actualizar señal</button>`;
+  else if(type==='small') content=`<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:8px">🪶 Regla de los 2 minutos</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">El objetivo es no romper la cadena.</div>
+    <div class="form-group"><label class="form-label">Versión mínima</label>
+    <input id="redesignMin" class="form-input" maxlength="200" placeholder="ej: Ver solo 1 líder"></div>
+    <button class="btn-primary" onclick="applyRedesign('small')">Reducir</button>`;
+  else if(type==='time') content=`<div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:8px">🕐 Cambiar el momento</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">El momento importa tanto como el hábito.</div>
+    <div class="form-group"><label class="form-label">Nuevo horario</label>
+    <input id="redesignTime" class="form-input" maxlength="50" placeholder="ej: 6:30 AM" value="${esc(h?.time||'')}"></div>
+    <button class="btn-primary" onclick="applyRedesign('time')">Actualizar horario</button>`;
+  content+=`<button onclick="closeRedesign()" style="width:100%;margin-top:8px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:8px">Cancelar</button>`;
+  document.getElementById('redesignContent').innerHTML=content;
+  document.getElementById('redesignModal').style.display='flex';
+  S.frictionHabitId=id; // restore for applyRedesign
+}
+async function applyRedesign(type){
+  const id=S.frictionHabitId||S.habits[0]?.id;
+  S.habits=S.habits.map(h=>{
+    if(h.id!==id)return h;
+    if(type==='cue')return{...h,cue:(document.getElementById('redesignCue')?.value||'').trim().slice(0,200)};
+    if(type==='small')return{...h,routine:(document.getElementById('redesignMin')?.value||'').trim().slice(0,200)};
+    if(type==='time')return{...h,time:(document.getElementById('redesignTime')?.value||'').trim().slice(0,50)};
+    return h;
+  });
+  await save();closeRedesign();render();toast('Hábito rediseñado','success');
+}
+function closeRedesign(){document.getElementById('redesignModal').style.display='none'}
+
+async function importPreset(pid){
+  const p=IDENTITY_PRESETS.find(x=>x.id===pid);if(!p||isImported(pid))return;
+  S.habits.push({id:Date.now(),presetId:pid,type:'identity',name:p.name,category:p.category,time:p.time,color:p.color,active:true,createdAt:new Date().toISOString()});
+  await save();render();toast('Bloque importado','success');
+}
+async function removeHabit(id){
+  if(!confirm('¿Eliminar este hábito? Tu historial se conservará.'))return;
+  S.habits=S.habits.filter(h=>h.id!==id);
+  await save();render();
+}
+async function unpauseHabit(id){S.pausedHabits=S.pausedHabits.filter(x=>x!==id);await save();render()}
+async function promoteToIdentity(id){S.habits=S.habits.map(h=>h.id===id?{...h,type:'identity'}:h);await save();render();toast('Hábito consolidado','success')}
+
+async function addHabit(){
+  const nameRaw=document.getElementById('hName')?.value||'';
+  const name=nameRaw.trim().slice(0,100);
+  if(!name){toast('El nombre es obligatorio','error');return}
+  S.habits.push({
+    id:Date.now(),type:'building',name,category:S.newHabit.category,
+    cue:(document.getElementById('hCue')?.value||'').trim().slice(0,200),
+    routine:(document.getElementById('hRoutine')?.value||'').trim().slice(0,200),
+    reward:(document.getElementById('hReward')?.value||'').trim().slice(0,200),
+    time:(document.getElementById('hTime')?.value||'').trim().slice(0,50),
+    active:true,createdAt:new Date().toISOString()
+  });
+  S.addingHabit=false;S.newHabit={name:'',category:'trabajo',cue:'',routine:'',reward:'',time:''};
+  await save();render();toast('Hábito creado','success');
+}
+function selectHabitCat(id){
+  S.newHabit.category=id;
+  document.querySelectorAll('.hcat-pill').forEach(p=>{
+    const c=cat(p.dataset.cat);
+    p.style.background=p.dataset.cat===id?c.color+'33':'var(--surface)';
+    p.style.color=p.dataset.cat===id?c.color:'var(--muted)';
+    p.style.borderColor=p.dataset.cat===id?c.color:'var(--border)';
+  });
+}
+
+async function saveCapture(){
+  const raw=document.getElementById('captureText')?.value||'';
+  const text=raw.trim().slice(0,2000);
+  if(!text){toast('La idea está vacía','error');return}
+  S.ideas.unshift({id:Date.now(),text,category:S.captureCategory,date:new Date().toISOString(),processed:false});
+  document.getElementById('captureText').value='';
+  await save();closeCapture();updateBadges();
+  if(S.view==='ideas')render();
+  toast('Idea capturada','success');
+}
+async function saveQuickIdea(){
+  const ta=document.getElementById('quickIdeaText');if(!ta)return;
+  const text=ta.value.trim().slice(0,2000);if(!text){toast('La idea está vacía','error');return}
+  S.ideas.unshift({id:Date.now(),text,category:S.captureCategory,date:new Date().toISOString(),processed:false});
+  ta.value='';await save();updateBadges();render();
+}
+async function toggleIdea(id){S.ideas=S.ideas.map(i=>i.id===id?{...i,processed:!i.processed}:i);await save();updateBadges();render()}
+async function deleteIdea(id){S.ideas=S.ideas.filter(i=>i.id!==id);await save();updateBadges();render()}
+function openCapture(){
+  S.captureCategory='trabajo';
+  document.getElementById('captureModal').style.display='flex';
+  renderCaptureCats();
+  setTimeout(()=>document.getElementById('captureText')?.focus(),100);
+}
+function closeCapture(){document.getElementById('captureModal').style.display='none'}
+function selectCaptureCategory(id){S.captureCategory=id;renderCaptureCats()}
+function renderCaptureCats(){
+  document.getElementById('captureCats').innerHTML=CATS.map(c=>`
+    <button class="cat-pill" onclick="selectCaptureCategory('${esc(c.id)}')"
+      style="background:${c.id===S.captureCategory?c.color+'33':'var(--surface)'};color:${c.id===S.captureCategory?c.color:'var(--muted)'};border-color:${c.id===S.captureCategory?c.color:'var(--border)'}">
+      ${c.icon} ${esc(c.label)}</button>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ════════════════════════════════════════════════════════════════════════════
+async function exportData(){
+  try{
+    const allLog=await dbGetAll(STORES.log);
+    const allDaily=await dbGetAll(STORES.daily);
+    const allReviews=await dbGetAll(STORES.reviews);
+    const data={
+      version:3,exportedAt:new Date().toISOString(),
+      habits:S.habits,ideas:S.ideas,streak:S.streak,
+      log:allLog,daily:allDaily,reviews:allReviews,
+      pausedHabits:S.pausedHabits,
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='sistema-ha-'+TODAY+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup descargado','success');
+  }catch(e){console.error('export failed',e);toast('Error al exportar','error')}
+}
+function importData(){document.getElementById('importFile').click()}
+async function handleImport(e){
+  const file=e.target.files[0];if(!file)return;
+  if(file.size>10*1024*1024){toast('Archivo demasiado grande','error');return}
+  const reader=new FileReader();
+  reader.onload=async(ev)=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data||typeof data!=='object'){throw new Error('Invalid format')}
+      if(!confirm('¿Reemplazar todos los datos actuales con este backup? Esta acción no se puede deshacer.'))return;
+      if(Array.isArray(data.habits))S.habits=data.habits;
+      if(Array.isArray(data.ideas))S.ideas=data.ideas;
+      if(typeof data.streak==='object'&&data.streak!==null)S.streak=data.streak;
+      if(Array.isArray(data.pausedHabits))S.pausedHabits=data.pausedHabits;
+      if(data.log&&typeof data.log==='object'){
+        S.log=data.log;
+        for(const [k,v] of Object.entries(data.log)) await dbSet(STORES.log,k,v);
+      }
+      if(data.daily&&typeof data.daily==='object'){
+        for(const [k,v] of Object.entries(data.daily)) await dbSet(STORES.daily,k,v);
+      }
+      if(data.reviews&&typeof data.reviews==='object'){
+        for(const [k,v] of Object.entries(data.reviews)) await dbSet(STORES.reviews,k,v);
+      }
+      await saveAll();
+      // reload from db to get all state correctly
+      await loadAll();
+      render();
+      toast('✅ Datos importados correctamente','success');
+    }catch(err){
+      console.error('import error',err);
+      toast('Archivo inválido. Asegúrate de usar un backup de este sistema.','error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// WEEKLY REVIEW
+// ════════════════════════════════════════════════════════════════════════════
+const REVIEW_QUESTIONS=[
+  {id:'broke',q:'¿Qué hábito fue el más difícil esta semana?',type:'habit'},
+  {id:'why',q:'¿Por qué crees que fue difícil?',type:'choice',
+    opts:['La señal no funcionó','El momento era malo','Estaba agotado','No sentí la recompensa','Cambió mi rutina']},
+  {id:'promote',q:'¿Algún hábito en construcción ya se siente automático?',type:'habit_promote'},
+  {id:'focus',q:'¿Cuál será tu enfoque de la próxima semana?',type:'text'},
+];
+function startReview(){S.reviewStep=0;S.reviewAnswers={};render()}
+async function reviewAnswer(val){
+  const q=REVIEW_QUESTIONS[S.reviewStep];
+  S.reviewAnswers[q.id]=val;
+  if(S.reviewStep<REVIEW_QUESTIONS.length-1)S.reviewStep++;
+  else{S.weekReview={...S.reviewAnswers,completedAt:new Date().toISOString()};await save();S.reviewStep=null;toast('Revisión completada','success')}
+  render();
+}
+async function reviewTextAnswer(){
+  const v=(document.getElementById('reviewTextInput')?.value||'').trim().slice(0,500);
+  await reviewAnswer(v||'Sin respuesta');
+}
+async function promoteFromReview(id){
+  await promoteToIdentity(id);
+  await reviewAnswer('Promovido: '+(S.habits.find(h=>h.id===id)?.name||''));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AI COACH
+// ════════════════════════════════════════════════════════════════════════════
+async function getAiInsight(){
+  if(S.loadingAI)return;
+  S.loadingAI=true;render();
+  const cons=getConsistency30(),weak=getWeakestDay(),best=getBestDay(),bestS=getBestStreak();
+  const alerts=getFrictionAlerts();
+  const prompt=`Eres un coach experto en Hábitos Atómicos de James Clear con acceso al historial real del usuario.
+
+DATOS DE LOS ÚLTIMOS 30 DÍAS:
+- Consistencia general: ${cons}%
+- Mejor día: ${best?best.day+' ('+best.pct+'%)':'sin datos'}
+- Día débil: ${weak?weak.day+' ('+weak.pct+'%)':'sin datos'}
+- Mejor racha: ${bestS} días
+- Hábitos con fricción: ${alerts.map(a=>a.habit.name+' ('+a.missed+' días)').join(', ')||'ninguno'}
+- Identidad: ${S.habits.filter(h=>h.type==='identity').length} hábitos
+- Construcción: ${S.habits.filter(h=>h.type==='building').length} hábitos
+- Completados hoy: ${completedToday()}/${activeHabits().length}
+- Energía hoy: ${S.energy||'no registrada'}
+- Intención: "${S.intention||'no registrada'}"
+- Trabaja con líderes comunitarios en Bogotá, Colombia.
+
+Da una reflexión profunda (máximo 4 oraciones). Menciona un patrón específico de los datos. Aplica un principio de Hábitos Atómicos. Español colombiano, cálido y directo. Sin asteriscos ni markdown.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    if(!res.ok)throw new Error('API error '+res.status);
+    const data=await res.json();
+    S.aiInsight=data.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||'Sigue construyendo.';
+  }catch(e){
+    console.error('AI error',e);
+    S.aiInsight='No se pudo conectar con el coach. Revisa tu conexión e intenta de nuevo.';
+  }
+  S.loadingAI=false;render();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════════════════════════
+function render(){
+  document.getElementById('dateDisplay').textContent=formatDate();
+  updateBadges();
+  const el=document.getElementById('mainContent');
+  if(S.view==='dashboard')    el.innerHTML=renderDashboard();
+  else if(S.view==='habitos') el.innerHTML=renderHabitos();
+  else if(S.view==='memoria') el.innerHTML=renderMemoria();
+  else if(S.view==='ideas')   el.innerHTML=renderIdeas();
+  else if(S.view==='revision')el.innerHTML=renderRevision();
+  else if(S.view==='coach')   el.innerHTML=renderCoach();
+}
+
+function renderDashboard(){
+  const pct=progressPct(),done=completedToday(),total=activeHabits().length;
+  const q=QUOTES[new Date().getDay()%QUOTES.length];
+  const alerts=getFrictionAlerts();
+  const hour=new Date().getHours();
+  const isEvening=hour>=18;
+
+  let energyHTML='';
+  if(!S.energy){
+    energyHTML=`<div class="card" style="animation:intentionPulse 2s infinite">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px">¿Cómo amaneciste hoy?</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Ajusta lo que el sistema espera de ti.</div>
+      <div class="energy-row">
+        <button class="energy-btn" onclick="setEnergy('red')"><span style="font-size:24px;display:block;margin-bottom:4px">😴</span><span style="font-size:11px;color:var(--muted)">Agotado</span></button>
+        <button class="energy-btn" onclick="setEnergy('yellow')"><span style="font-size:24px;display:block;margin-bottom:4px">😐</span><span style="font-size:11px;color:var(--muted)">Regular</span></button>
+        <button class="energy-btn" onclick="setEnergy('green')"><span style="font-size:24px;display:block;margin-bottom:4px">⚡</span><span style="font-size:11px;color:var(--muted)">Con energía</span></button>
+      </div>
+    </div>`;
+  } else {
+    const eM={red:{e:'😴',l:'Agotado',c:'var(--red)',m:'Solo protege los bloques de identidad. Los hábitos en construcción son opcionales.'},
+      yellow:{e:'😐',l:'Regular',c:'var(--gold)',m:'Enfócate en los más importantes.'},
+      green:{e:'⚡',l:'Con energía',c:'var(--green)',m:'Hoy es un día para dar el 100%.'}};
+    const em=eM[S.energy];
+    energyHTML=`<div class="card" style="border-color:${em.c}33;background:${em.c}11">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;color:${em.c};font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Energía de hoy</div>
+          <div style="font-size:20px">${em.e} <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:${em.c}">${em.l}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">${em.m}</div>
+        </div>
+        <button onclick="setEnergy('')" style="background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer">↻</button>
+      </div>
+    </div>`;
+  }
+
+  let intentionHTML='';
+  if(!S.intention){
+    intentionHTML=`<div class="intention-card" style="animation:intentionPulse 2.5s infinite">
+      <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:6px">🌅 INTENCIÓN DEL DÍA</div>
+      <div style="font-size:14px;color:var(--gold);font-weight:600;margin-bottom:8px">"Hoy quiero ser el tipo de persona que…"</div>
+      <textarea id="intentionInput" maxlength="500" class="form-textarea" placeholder="…cumple sus compromisos aunque no tenga ganas." style="background:#F5A62311;border-color:#F5A62333;min-height:60px" onblur="saveIntention()"></textarea>
+      <button onclick="saveIntention().then(render)" style="margin-top:8px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer">Establecer intención</button>
+    </div>`;
+  } else {
+    intentionHTML=`<div class="intention-card">
+      <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:6px">🌅 INTENCIÓN DEL DÍA</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;line-height:1.5">"Hoy quiero ser el tipo de persona que ${esc(S.intention)}"</div>
+      ${isEvening&&!S.intentionEvening?`
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #F5A62333">
+          <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:8px">🌙 ¿Lo viviste hoy?</div>
+          <textarea id="eveningInput" maxlength="500" class="form-textarea" placeholder="Reflexión honesta del día…" style="background:#F5A62311;border-color:#F5A62333;min-height:60px"></textarea>
+          <button onclick="saveEveningReflection()" style="margin-top:6px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer">Guardar reflexión</button>
+        </div>`:S.intentionEvening?`<div style="margin-top:10px;font-size:12px;color:var(--muted);font-style:italic;border-top:1px solid #F5A62322;padding-top:10px">🌙 "${esc(S.intentionEvening)}"</div>`:''}
+      <button onclick="S.intention='';save().then(render)" style="margin-top:10px;background:none;border:none;color:var(--dim);font-size:11px;cursor:pointer">✏️ Cambiar</button>
+    </div>`;
+  }
+
+  const frictionHTML=alerts.slice(0,2).map(({habit,missed})=>`
+    <div class="friction-card ${missed>=5?'warning':'moderate'}">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:${missed>=5?'var(--red)':'var(--gold)'};margin-bottom:4px">${missed>=5?'🚨':'⚠️'} ${esc(habit.name)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${missed} días sin completar. Tu sistema necesita ajuste.</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="openFriction(${habit.id})" style="background:${missed>=5?'var(--red)':'var(--gold)'};color:${missed>=5?'#fff':'#000'};border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-family:'DM Sans';font-weight:500;cursor:pointer">🔧 Rediseñar</button>
+      </div>
+    </div>`).join('');
+
+  const progressHTML=`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:2px">Progreso de hoy</div>
+        <div style="font-size:12px;color:var(--muted)">${done} de ${total} completados</div>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:${pct===100?'var(--green)':'var(--accent)'}">${pct}%</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    ${pct===100?`<div style="margin-top:10px;font-size:13px;color:var(--green);font-weight:500">🎉 ¡Día perfecto!</div>`:''}
+  </div>`;
+
+  const iH=activeHabits().filter(h=>h.type==='identity');
+  const bH=activeHabits().filter(h=>h.type==='building');
+
+  function hBtn(h){
+    const d=isDone(h.id,TODAY);
+    const color=h.color||cat(h.category).color;
+    const s=getStreak(h.id);
+    const opt=S.energy==='red'&&h.type==='building';
+    return `<button class="habit-item" onclick="toggleHabit(${h.id})"
+      style="background:${d?color+'18':'var(--card)'};border-color:${d?color+'55':'var(--border)'};${opt?'opacity:.6':''}">
+      <div class="check-box" style="${d?'background:'+color+';border-color:'+color+';color:#fff':''}">${d?'✓':''}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500;color:${d?'var(--muted)':'var(--text)'};text-decoration:${d?'line-through':'none'}">
+          ${esc(h.name)}${opt?' <span style="font-size:10px;color:var(--dim)">(opcional)</span>':''}
+        </div>
+        ${h.time?`<div style="font-size:11px;color:var(--dim);margin-top:2px">🕐 ${esc(h.time)}</div>`:''}
+      </div>
+      ${s>0?`<div style="font-size:11px;color:var(--gold);background:var(--gold-soft);border-radius:6px;padding:3px 8px;font-weight:600">🔥 ${s}d</div>`:''}
+    </button>`;
+  }
+
+  let habitsHTML='';
+  if(S.habits.length===0){
+    habitsHTML=`<div style="background:var(--card);border:1px dashed var(--border);border-radius:16px;padding:28px;text-align:center;margin-bottom:12px">
+      <div style="font-size:34px;margin-bottom:8px">⚛️</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:6px">Aún no hay hábitos</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Ve a "Hábitos" para empezar.</div>
+      <button class="btn-primary" onclick="setView('habitos',null)" style="width:auto;padding:8px 18px">Ir a Hábitos →</button>
+    </div>`;
+  } else {
+    if(iH.length>0){
+      habitsHTML+=`<div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-label" style="color:var(--green)">✅ Identidad</div><div class="section-divider-line"></div></div>`;
+      habitsHTML+=iH.map(hBtn).join('');
+    }
+    if(bH.length>0){
+      habitsHTML+=`<div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-label" style="color:var(--gold)">🔨 En construcción</div><div class="section-divider-line"></div></div>`;
+      habitsHTML+=bH.map(hBtn).join('');
+    }
+  }
+
+  const paused=S.habits.filter(h=>S.pausedHabits.includes(h.id));
+  const pausedHTML=paused.length>0?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">⏸️ PAUSADOS</div>
+    ${paused.map(h=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">
+      <span style="font-size:13px;color:var(--dim)">${esc(h.name)}</span>
+      <button onclick="unpauseHabit(${h.id})" style="background:var(--accent-soft);color:var(--accent);border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Reactivar</button>
+    </div>`).join('')}
+  </div>`:'';
+
+  return energyHTML+intentionHTML+frictionHTML+progressHTML+habitsHTML+pausedHTML+`
+    <div class="quote-card">
+      <div style="font-style:italic;font-size:15px;line-height:1.7;margin-bottom:8px">"${esc(q.q)}"</div>
+      <div style="font-size:12px;color:var(--accent);font-weight:600">— ${esc(q.a)}</div>
+    </div>`;
+}
+
+function renderHabitos(){
+  const available=IDENTITY_PRESETS.filter(p=>!isImported(p.id));
+  const iH=S.habits.filter(h=>h.type==='identity');
+  const bH=S.habits.filter(h=>h.type==='building');
+
+  const importSection=`<div style="background:var(--green-soft);border:1px solid #2DD4A044;border-radius:16px;padding:18px;margin-bottom:14px">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--green);margin-bottom:4px">✅ Bloques de identidad</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Tus hábitos consolidados del calendario.</div>
+    ${available.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #2DD4A022;gap:10px">
+      <div><div style="font-size:14px;font-weight:500">${esc(p.name)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">🕐 ${esc(p.time)} · ${esc(p.desc)}</div></div>
+      <button class="import-btn" onclick="importPreset('${esc(p.id)}')">+ Importar</button>
+    </div>`).join('')}
+    ${available.length===0?'<div style="font-size:13px;color:var(--muted)">✓ Todos importados.</div>':''}
+    ${iH.length>0?`<div style="margin-top:12px">${iH.map(h=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:10px">
+      <div><div style="font-size:14px;font-weight:500">${esc(h.name)}</div>${h.time?`<div style="font-size:11px;color:var(--muted)">🕐 ${esc(h.time)}</div>`:''}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${getStreak(h.id)>0?`<div style="font-size:11px;color:var(--gold);background:var(--gold-soft);border-radius:6px;padding:3px 8px;font-weight:600">🔥 ${getStreak(h.id)}d</div>`:''}
+        <button class="del-btn" onclick="removeHabit(${h.id})">×</button>
+      </div>
+    </div>`).join('')}</div>`:''}
+  </div>`;
+
+  let formHTML='';
+  if(S.addingHabit){
+    formHTML=`<div style="background:var(--card);border:1px solid #F5A62355;border-radius:16px;padding:18px;margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--gold);margin-bottom:14px">🔨 Nuevo hábito en construcción</div>
+      <div class="form-group"><label class="form-label">Nombre *</label><input id="hName" maxlength="100" class="form-input" placeholder="ej: Revisión diaria del Semáforo"></div>
+      <div class="form-group"><label class="form-label">Categoría</label>
+        <div class="cat-pills">${CATS.map(c=>`<button class="cat-pill hcat-pill" data-cat="${esc(c.id)}" onclick="selectHabitCat('${esc(c.id)}')"
+          style="background:${c.id===S.newHabit.category?c.color+'33':'var(--surface)'};color:${c.id===S.newHabit.category?c.color:'var(--muted)'};border-color:${c.id===S.newHabit.category?c.color:'var(--border)'}">
+          ${c.icon} ${esc(c.label)}</button>`).join('')}</div></div>
+      <div class="form-group"><label class="form-label">🎯 Señal</label><input id="hCue" maxlength="200" class="form-input" placeholder="ej: Después del gym"></div>
+      <div class="form-group"><label class="form-label">⚡ Rutina</label><input id="hRoutine" maxlength="200" class="form-input" placeholder="ej: Reviso 3 líderes"></div>
+      <div class="form-group"><label class="form-label">🏆 Recompensa</label><input id="hReward" maxlength="200" class="form-input" placeholder="ej: Sensación de control"></div>
+      <div class="form-group"><label class="form-label">🕐 Hora (opcional)</label><input id="hTime" maxlength="50" class="form-input" placeholder="ej: 6:30 AM"></div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="addHabit()" style="flex:1;background:linear-gradient(135deg,#F5A623,#FF8C42)">Guardar</button>
+        <button class="btn-secondary" onclick="S.addingHabit=false;render()">Cancelar</button>
+      </div>
+    </div>`;
+  }
+
+  const buildSection=`<div style="background:var(--gold-soft);border:1px solid #F5A62344;border-radius:16px;padding:18px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--gold)">🔨 En construcción</div>
+      <button onclick="S.addingHabit=true;render()" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-family:'DM Sans';font-weight:600;cursor:pointer">+ Nuevo</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Con la fórmula Señal → Rutina → Recompensa.</div>
+    ${formHTML}
+    ${bH.length===0&&!S.addingHabit?`<div style="text-align:center;padding:16px 0;color:var(--muted);font-size:13px">Toca "+ Nuevo" para crear tu primer hábito.</div>`
+    :bH.map(h=>{
+      const c=cat(h.category);const s=getStreak(h.id);const missed=getMissedDays(h.id);
+      const cons30=Math.round(getLast30Days().filter(d=>isDone(h.id,d)).length/30*100);
+      return `<div style="background:var(--card);border:1px solid ${missed>=3?'var(--red)55':'var(--border)'};border-radius:12px;padding:14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${(h.cue||h.routine)?'10px':'0'}">
+          <div style="display:flex;gap:8px">
+            <div style="width:32px;height:32px;border-radius:8px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${c.icon}</div>
+            <div>
+              <div style="font-weight:600;font-size:14px">${esc(h.name)}</div>
+              <div style="font-size:11px;color:${c.color};margin-top:2px">${esc(c.label)}${h.time?' · 🕐'+esc(h.time):''}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">30d: ${cons30}% · 🔥${s}d${missed>=3?' · <span style="color:var(--red)">⚠️ '+missed+' días</span>':''}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center">
+            ${missed>=3?`<button onclick="openFriction(${h.id})" style="background:var(--red-soft);color:var(--red);border:none;border-radius:6px;padding:4px 7px;font-size:10px;cursor:pointer;font-weight:600">🔧</button>`:''}
+            <button onclick="promoteToIdentity(${h.id})" style="background:var(--green-soft);color:var(--green);border:none;border-radius:6px;padding:4px 7px;font-size:10px;cursor:pointer;font-weight:600">✅</button>
+            <button class="del-btn" onclick="removeHabit(${h.id})">×</button>
+          </div>
+        </div>
+        ${h.cue?`<div class="formula-row"><span style="font-size:12px">🎯</span><span style="font-size:12px;color:var(--muted)">${esc(h.cue)}</span></div>`:''}
+        ${h.routine?`<div class="formula-row"><span style="font-size:12px">⚡</span><span style="font-size:12px;color:var(--muted)">${esc(h.routine)}</span></div>`:''}
+        ${h.reward?`<div class="formula-row"><span style="font-size:12px">🏆</span><span style="font-size:12px;color:var(--muted)">${esc(h.reward)}</span></div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  return `<div class="page-title" style="margin-bottom:14px">⚛️ Mis Hábitos</div>${importSection}${buildSection}`;
+}
+
+function renderMemoria(){
+  const days30=getLast30Days(),days90=getLast90Days();
+  const insights=getInsights();
+  const weekStats=getWeekdayStats();
+  const cons=getConsistency30(),bestS=getBestStreak();
+
+  const heatCells=days90.map(d=>{
+    const pct=getPctOnDay(d);
+    let bg;
+    if(!S.log[d]||Object.keys(S.log[d]||{}).length===0) bg='var(--border)';
+    else if(pct===0) bg='#FF6B6B22';
+    else if(pct<50) bg='#F5A62344';
+    else if(pct<80) bg='#2DD4A066';
+    else bg='#2DD4A0';
+    const date=new Date(d+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'});
+    return `<div class="heat-cell" style="background:${bg}" title="${esc(date)}: ${pct}%"></div>`;
+  }).join('');
+
+  const maxPct=Math.max(...weekStats.filter(v=>v!==null),1);
+  const barChart=DAYS_ES.map((day,i)=>{
+    const v=weekStats[i];
+    const h=v!==null?Math.max(4,Math.round((v/maxPct)*70)):4;
+    const color=v===null?'var(--border)':v>=80?'var(--green)':v>=50?'var(--accent)':'var(--red)';
+    return `<div class="bar-col">
+      <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:2px">${v!==null?v+'%':''}</div>
+      <div class="bar-fill" style="height:${h}px;background:${color}"></div>
+      <div class="bar-label">${day}</div>
+    </div>`;
+  }).join('');
+
+  const habitRows=S.habits.map(h=>{
+    const s=getStreak(h.id);
+    const color=h.color||cat(h.category).color;
+    const pct30=days30.filter(d=>isDone(h.id,d)).length;
+    const consistency=Math.round(pct30/30*100);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:8px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${cat(h.category).icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(h.name)}</div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <div style="height:4px;background:var(--border);border-radius:2px;flex:1;overflow:hidden">
+            <div style="height:100%;width:${consistency}%;background:${color};border-radius:2px"></div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:${color}">${consistency}%</div>
+        <div style="font-size:10px;color:var(--dim)">🔥 ${s}d</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="page-title">📊 Memoria del Sistema</div>
+    <div class="page-sub">Tu historial real. Aquí vive el efecto compuesto.</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" style="color:var(--accent)">${cons}%</div><div class="stat-label">Consistencia 30 días</div></div>
+      <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-val" style="color:var(--gold)">${bestS}d</div><div class="stat-label">Mejor racha</div></div>
+      <div class="stat-card"><div class="stat-icon">⚛️</div><div class="stat-val" style="color:var(--green)">${S.habits.filter(h=>h.type==='identity').length}</div><div class="stat-label">Identidad</div></div>
+      <div class="stat-card"><div class="stat-icon">🔨</div><div class="stat-val" style="color:var(--purple)">${S.habits.filter(h=>h.type==='building').length}</div><div class="stat-label">En construcción</div></div>
+    </div>
+    ${insights.length>0?`<div style="margin-bottom:12px">${insights.map(i=>`
+      <div class="insight-chip ${i.type}">
+        <span>${i.type==='good'?'✅':i.type==='warn'?'⚠️':'🚨'}</span>
+        <span>${esc(i.text)}</span>
+      </div>`).join('')}</div>`:''}
+    <div class="card">
+      <div class="chart-title">Últimos 90 días</div>
+      <div class="heatmap">${heatCells}</div>
+      <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+        ${[['var(--border)','Sin datos'],['#FF6B6B22','0%'],['#F5A62344','<50%'],['#2DD4A066','<80%'],['#2DD4A0','100%']].map(([c,l])=>`
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:10px;height:10px;border-radius:2px;background:${c}"></div>
+            <span style="font-size:10px;color:var(--dim)">${esc(l)}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="chart-title">Promedio por día de la semana</div>
+      <div class="bar-chart">${barChart}</div>
+    </div>
+    ${S.habits.length>0?`<div class="card">
+      <div class="chart-title">Consistencia por hábito — 30 días</div>
+      ${habitRows}
+    </div>`:''}
+    <div class="card">
+      <div class="chart-title">Backup y restauración</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+        Exporta tu historial para hacer backup. Importa para restaurarlo en otro celular.
+      </div>
+      <button class="export-btn" onclick="exportData()">
+        <span style="font-size:18px">📤</span>
+        <div style="text-align:left">
+          <div style="font-weight:500">Exportar mis datos</div>
+          <div style="font-size:11px;color:var(--muted)">Descarga un JSON con todo tu historial</div>
+        </div>
+      </button>
+      <button class="export-btn" onclick="importData()">
+        <span style="font-size:18px">📥</span>
+        <div style="text-align:left">
+          <div style="font-weight:500">Importar datos</div>
+          <div style="font-size:11px;color:var(--muted)">Restaura un backup anterior</div>
+        </div>
+      </button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+    </div>`;
+}
+
+function renderIdeas(){
+  return `<div class="page-title">💡 Bandeja de Ideas</div>
+    <div class="page-sub">Captura todo. Procesas una vez al día.</div>
+    <div class="card">
+      <textarea class="form-textarea" id="quickIdeaText" maxlength="2000" placeholder="¿Qué idea quieres capturar?"></textarea>
+      <div class="cat-pills" style="margin:8px 0">${CATS.map(c=>`<button class="cat-pill" onclick="S.captureCategory='${esc(c.id)}';render()"
+        style="background:${c.id===S.captureCategory?c.color+'33':'var(--surface)'};color:${c.id===S.captureCategory?c.color:'var(--muted)'};border-color:${c.id===S.captureCategory?c.color:'var(--border)'}">
+        ${c.icon} ${esc(c.label)}</button>`).join('')}</div>
+      <button class="btn-primary" onclick="saveQuickIdea()">Guardar idea</button>
+    </div>
+    ${S.ideas.length===0?`<div style="background:var(--card);border:1px dashed var(--border);border-radius:16px;padding:28px;text-align:center"><div style="font-size:34px;margin-bottom:8px">💡</div><div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:6px">Bandeja vacía</div><div style="font-size:13px;color:var(--muted)">Cuando llegue una idea, captúrala aquí.</div></div>`
+    :S.ideas.map(i=>{
+      const c=cat(i.category);
+      return `<div class="idea-item" style="opacity:${i.processed?.5:1};border-color:${i.processed?'var(--border)':c.color+'44'}">
+        <div style="font-size:11px;color:${c.color};margin-bottom:4px">${c.icon} ${esc(c.label)}</div>
+        <div style="font-size:14px;line-height:1.6;margin:4px 0 8px;text-decoration:${i.processed?'line-through':'none'};color:${i.processed?'var(--dim)':'var(--text)'};white-space:pre-wrap;word-break:break-word">${esc(i.text)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:10px;color:var(--dim)">${esc(new Date(i.date).toLocaleDateString('es-CO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))}</div>
+          <div style="display:flex;gap:6px">
+            <button class="idea-btn" onclick="toggleIdea(${i.id})" style="background:${i.processed?'var(--green-soft)':'var(--accent-soft)'};color:${i.processed?'var(--green)':'var(--accent)'}">${i.processed?'↩':'✓'}</button>
+            <button class="del-btn" onclick="deleteIdea(${i.id})">×</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function renderRevision(){
+  if(reviewDone()){
+    const r=S.weekReview;
+    return `<div class="page-title">🔄 Revisión Semanal</div>
+      <div style="background:var(--green-soft);border:1px solid #2DD4A044;border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">✅</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--green);margin-bottom:14px">Revisión completada</div>
+        ${r.why?`<div style="margin-bottom:10px;text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">FRICCIÓN</div><div style="font-size:14px">${esc(r.why)}</div></div>`:''}
+        ${r.focus?`<div style="text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">ENFOQUE DE ESTA SEMANA</div><div style="font-size:14px;font-style:italic">"${esc(r.focus)}"</div></div>`:''}
+      </div>
+      <button onclick="S.weekReview={};save().then(()=>{startReview()})" class="btn-secondary" style="width:100%">Hacer nueva revisión</button>`;
+  }
+  if(S.reviewStep===null||S.reviewStep===undefined){
+    return `<div class="page-title">🔄 Revisión Semanal</div>
+      <div class="page-sub">5 minutos para cerrar la semana.</div>
+      <div class="card" style="text-align:center;padding:28px">
+        <div style="font-size:40px;margin-bottom:12px">🔄</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:8px">Revisión de la semana</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">${isSunday()?'Hoy es domingo — el momento perfecto.':'Puedes hacerla cualquier día.'}</div>
+        <button class="btn-primary" onclick="startReview()">Empezar →</button>
+      </div>`;
+  }
+  const step=S.reviewStep;
+  const q=REVIEW_QUESTIONS[step];
+  const progress=Math.round((step/REVIEW_QUESTIONS.length)*100);
+  const bH=S.habits.filter(h=>h.type==='building');
+  let body='';
+  if(q.type==='habit'){
+    body=bH.length===0?`<button class="review-option" onclick="reviewAnswer('Ninguno')">No tengo hábitos en construcción →</button>`
+      :bH.map(h=>`<button class="review-option" onclick="reviewAnswer('${esc(h.name).replace(/'/g,'')}')">${esc(h.name)}</button>`).join('')
+       +`<button class="review-option" onclick="reviewAnswer('Todos bien')">Todos fueron bien ✓</button>`;
+  } else if(q.type==='choice'){
+    body=q.opts.map(o=>`<button class="review-option" onclick="reviewAnswer('${esc(o).replace(/'/g,'')}')">${esc(o)}</button>`).join('');
+  } else if(q.type==='habit_promote'){
+    body=bH.length===0?`<button class="review-option" onclick="reviewAnswer('Ninguno aún')">Ninguno aún →</button>`
+      :bH.map(h=>`<button class="review-option" onclick="promoteFromReview(${h.id})">✅ ${esc(h.name)} — ya es automático</button>`).join('')
+       +`<button class="review-option" onclick="reviewAnswer('Ninguno listo')">Ninguno listo aún →</button>`;
+  } else if(q.type==='text'){
+    body=`<textarea id="reviewTextInput" maxlength="500" class="form-textarea" placeholder="ej: Ser más consistente con el Semáforo"></textarea>
+      <button class="btn-primary" style="margin-top:10px" onclick="reviewTextAnswer()">Finalizar ✓</button>`;
+  }
+  return `<div class="page-title">🔄 Revisión Semanal</div>
+    <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:20px;overflow:hidden">
+      <div style="height:100%;width:${progress}%;background:var(--accent);border-radius:4px"></div>
+    </div>
+    <div class="review-step">
+      <div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Pregunta ${step+1} de ${REVIEW_QUESTIONS.length}</div>
+      <div class="review-question">${esc(q.q)}</div>
+      ${body}
+    </div>`;
+}
+
+function renderCoach(){
+  const alerts=getFrictionAlerts();
+  const cons=getConsistency30();
+  const laws=[
+    {num:'1',law:'Hazlo obvio',desc:"Define cuándo y dónde exactamente.",icon:'👁️',color:'var(--blue)'},
+    {num:'2',law:'Hazlo atractivo',desc:'Combina lo necesario con lo placentero.',icon:'✨',color:'var(--gold)'},
+    {num:'3',law:'Hazlo fácil',desc:'Regla de los 2 minutos.',icon:'🪶',color:'var(--green)'},
+    {num:'4',law:'Hazlo satisfactorio',desc:'El check y el streak son tu recompensa.',icon:'🏆',color:'var(--accent)'},
+  ];
+  return `<div class="page-title" style="margin-bottom:14px">🧠 Coach HA</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" style="color:var(--accent)">${cons}%</div><div class="stat-label">Consistencia 30d</div></div>
+      <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-val" style="color:var(--gold)">${getBestStreak()}d</div><div class="stat-label">Mejor racha</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val" style="color:var(--green)">${completedToday()}</div><div class="stat-label">Hoy completados</div></div>
+      <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" style="color:var(--red)">${alerts.length}</div><div class="stat-label">Con fricción</div></div>
+    </div>
+    ${alerts.length>0?`<div style="background:var(--red-soft);border:1px solid #FF6B6B44;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--red);margin-bottom:8px">⚠️ Detector de Fricción</div>
+      ${alerts.map(({habit,missed})=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:13px">${esc(habit.name)} — <span style="color:var(--red)">${missed} días</span></span>
+        <button onclick="openFriction(${habit.id})" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Rediseñar</button>
+      </div>`).join('')}
+    </div>`:''}
+    <button class="ai-btn ${S.loadingAI?'loading':''}" onclick="getAiInsight()">
+      ${S.loadingAI?'Analizando tu historial…':'✨ Coach IA — análisis de 30 días'}
+    </button>
+    ${S.aiInsight?`<div class="ai-result">
+      <div style="font-size:11px;color:var(--accent);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">🧠 Análisis personalizado</div>
+      <div style="font-size:15px;line-height:1.7;font-style:italic">"${esc(S.aiInsight)}"</div>
+    </div>`:''}
+    <div class="section-label" style="margin-bottom:10px">Las 4 Leyes</div>
+    ${laws.map(p=>`<div class="law-card"><div class="law-icon" style="background:${p.color}22">${p.icon}</div>
+      <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">Ley ${esc(p.num)}: ${esc(p.law)}</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">${esc(p.desc)}</div></div>
+    </div>`).join('')}`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCapture()}
+  if(e.key==='Escape'){closeCapture();closeFriction();closeRedesign()}
+});
+
+(async()=>{
+  try{
+    await loadAll();
+    document.getElementById('splash').style.display='none';
+    document.getElementById('app').style.display='flex';
+    render();
+    if(usingFallback){
+      setTimeout(()=>toast('Usando almacenamiento local (modo compatibilidad)','info'),500);
+    }
+  }catch(e){
+    console.error('init failed',e);
+    document.getElementById('splash').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:40px;margin-bottom:10px">⚠️</div><div style="color:var(--red);font-family:\'Syne\',sans-serif;font-weight:700">Error al cargar el sistema</div><div style="font-size:13px;color:var(--muted);margin-top:8px">Recarga la página o limpia el caché</div><button onclick="location.reload()" style="margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:\'Syne\',sans-serif;font-weight:700;cursor:pointer">Recargar</button></div>';
+  }
+})();
+</script>
+</body>
+</html>
